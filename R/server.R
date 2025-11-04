@@ -1,6 +1,6 @@
 # Server logic
 server <- function(input, output, session) {
-  chores_file <- "lawn_chores.csv"
+  chores_file <- "/home/shiny/yard_chores/yard_chores.csv"
 
   
   # Function to save chores to file
@@ -398,4 +398,5 @@ server <- function(input, output, session) {
     
     showNotification("Task deleted successfully!", type = "message")
   })
+
 }
