@@ -1,0 +1,15 @@
+library(shiny)
+library(shinyjs)
+library(bslib)
+library(httr)
+library(jsonlite)
+library(plotly)
+library(DT)
+library(dplyr)
+library(lubridate)
+library(readr)
+
+# Source the UI and server components
+source("utils.R")
+source("ui.R")
+source("server.R")
