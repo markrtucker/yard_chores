@@ -13,7 +13,12 @@ server <- function(input, output, session) {
   load_chores <- function() {
     if (file.exists(chores_file)) {
       tryCatch({
-        read_csv(chores_file)
+        df <- read_csv(chores_file)
+        # Migration: Add base_on_completion column if it doesn't exist
+        if (!"base_on_completion" %in% names(df)) {
+          df$base_on_completion <- FALSE
+        }
+        df
       }, error = function(e) {
         # Return empty data frame if file is corrupted
         data.frame(
@@ -22,6 +27,7 @@ server <- function(input, output, session) {
           frequency = character(0),
           description = character(0),
           due_date = as.Date(character(0)),
+          base_on_completion = logical(0),
           stringsAsFactors = FALSE
         )
       })
@@ -33,6 +39,7 @@ server <- function(input, output, session) {
         frequency = character(0),
         description = character(0),
         due_date = as.Date(character(0)),
+        base_on_completion = logical(0),
         stringsAsFactors = FALSE
       )
     }
@@ -54,6 +61,7 @@ server <- function(input, output, session) {
       frequency = character(0),
       description = character(0),
       due_date = as.Date(character(0)),
+      base_on_completion = logical(0),
       stringsAsFactors = FALSE
     )
     save_chores(loaded_chores)
@@ -217,13 +225,20 @@ server <- function(input, output, session) {
           
           if (nrow(completed_task) > 0) {
             # Check if it's a recurring task
-            if ("frequency" %in% names(completed_task) && 
-                !is.na(completed_task$frequency) && 
+            if ("frequency" %in% names(completed_task) &&
+                !is.na(completed_task$frequency) &&
                 completed_task$frequency != "once") {
-              
+
+              # Determine base date for calculation
+              base_date <- if ("base_on_completion" %in% names(completed_task) && completed_task$base_on_completion) {
+                Sys.Date()  # Use today (completion date)
+              } else {
+                completed_task$due_date  # Use original due date (current behavior)
+              }
+
               # Calculate next due date
-              next_due_date <- calculate_next_due_date(completed_task$due_date, completed_task$frequency)
-              
+              next_due_date <- calculate_next_due_date(completed_task$due_date, completed_task$frequency, base_date)
+
               # Update the task with new due date
               current_chores[current_chores$id == chore_id, "due_date"] <- next_due_date
               update_and_save_chores(current_chores)
@@ -299,13 +314,14 @@ server <- function(input, output, session) {
     current_chores <- chores()
     new_id <- if(nrow(current_chores) > 0) max(current_chores$id) + 1 else 1
     
-    new_task <- data.frame( 
+    new_task <- data.frame(
       id = new_id,
       name = input$task_name,
       due_date = as.Date(input$task_due_date),
       frequency = input$task_frequency,
-      description = ifelse(is.null(input$task_description) || input$task_description == "", 
+      description = ifelse(is.null(input$task_description) || input$task_description == "",
                           "", input$task_description),
+      base_on_completion = input$task_base_on_completion,
       stringsAsFactors = FALSE
     )
     
@@ -317,6 +333,7 @@ server <- function(input, output, session) {
     updateTextAreaInput(session, "task_description", value = "")
     updateDateInput(session, "task_due_date", value = Sys.Date())
     updateSelectInput(session, "task_frequency", selected = "once")
+    updateCheckboxInput(session, "task_base_on_completion", value = FALSE)
 
     showNotification("Task added successfully!", type = "message")
   })
@@ -332,8 +349,10 @@ server <- function(input, output, session) {
       # Populate form with existing data
       updateTextInput(session, "task_name", value = task_to_edit$name)
       updateDateInput(session, "task_due_date", value = as.Date(task_to_edit$due_date))
-      updateSelectInput(session, "task_frequency", 
-                        selected = ifelse("frequency" %in% names(task_to_edit), task_to_edit$frequency, "once"))      
+      updateSelectInput(session, "task_frequency",
+                        selected = ifelse("frequency" %in% names(task_to_edit), task_to_edit$frequency, "once"))
+      updateCheckboxInput(session, "task_base_on_completion",
+                         value = ifelse("base_on_completion" %in% names(task_to_edit), task_to_edit$base_on_completion, FALSE))
       updateTextAreaInput(session, "task_description", value = task_to_edit$description)
       
       # Show/hide buttons
@@ -354,8 +373,9 @@ server <- function(input, output, session) {
     current_chores[current_chores$id == task_id, "name"] <- input$task_name
     current_chores[current_chores$id == task_id, "due_date"] <- as.Date(input$task_due_date)
     current_chores[current_chores$id == task_id, "frequency"] <- input$task_frequency
+    current_chores[current_chores$id == task_id, "base_on_completion"] <- input$task_base_on_completion
     current_chores[current_chores$id == task_id, "description"] <- ifelse(
-      is.null(input$task_description) || input$task_description == "", 
+      is.null(input$task_description) || input$task_description == "",
       "", input$task_description
     )
     
@@ -367,23 +387,25 @@ server <- function(input, output, session) {
     updateTextAreaInput(session, "task_description", value = "")
     updateDateInput(session, "task_due_date", value = Sys.Date())
     updateSelectInput(session, "task_frequency", selected = "once")
+    updateCheckboxInput(session, "task_base_on_completion", value = FALSE)
 
     shinyjs::show("add_task_btn")
     shinyjs::hide("update_task_btn")
     shinyjs::hide("cancel_edit_btn")
-    
+
     showNotification("Task updated successfully!", type = "message")
   })
   
   # Handle cancel edit
   observeEvent(input$cancel_edit_btn, {
     editing_task(NULL)
-    
+
     # Clear form and reset buttons
     updateTextInput(session, "task_name", value = "")
     updateTextAreaInput(session, "task_description", value = "")
     updateDateInput(session, "task_due_date", value = Sys.Date())
     updateSelectInput(session, "task_frequency", selected = "once")
+    updateCheckboxInput(session, "task_base_on_completion", value = FALSE)
 
     shinyjs::show("add_task_btn")
     shinyjs::hide("update_task_btn")

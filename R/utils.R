@@ -6,15 +6,17 @@ initial_chores <- data.frame(
   name = c("Mow lawn once", "Water plants daily", "Trim hedges weekly", "Fertilize grass monthly", "Clean gutters quarterly"),
   due_date = c(today - 2, today + 3, today - 1, today + 5, today + 10),  # Mix of overdue and upcoming
   frequency = c("once", "daily", "weekly", "monthly", "quarterly"),
-  description = c("Cut grass in front and back yard", "Water all flower beds", 
-                  "Trim hedge along driveway", "Apply spring fertilizer", 
+  description = c("Cut grass in front and back yard", "Water all flower beds",
+                  "Trim hedge along driveway", "Apply spring fertilizer",
                   "Remove leaves and debris"),
+  base_on_completion = c(FALSE, FALSE, FALSE, FALSE, FALSE),
   stringsAsFactors = FALSE
 )
 
 # Calculate next due date for recurring tasks
-calculate_next_due_date <- function(current_due_date, frequency) {
-  current_date <- as.Date(current_due_date)
+calculate_next_due_date <- function(current_due_date, frequency, base_date = NULL) {
+  # Use base_date if provided, otherwise use current_due_date
+  current_date <- as.Date(if (!is.null(base_date)) base_date else current_due_date)
   
   switch(frequency,
     "daily" = current_date + 1,
