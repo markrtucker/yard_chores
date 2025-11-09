@@ -103,16 +103,19 @@ ui <- page_navbar(
         card_header("Add/Edit Task"),
         card_body(
           textInput("task_name", "Task Name:", placeholder = "Enter task name"),
-          selectInput("task_frequency", "Frequency:", 
+          selectInput("task_frequency", "Frequency:",
             choices = c(
               "One-time" = "once",
               "Daily" = "daily",
-              "Weekly" = "weekly", 
+              "Weekly" = "weekly",
               "Monthly" = "monthly",
               "Quarterly" = "quarterly",
               "Yearly" = "yearly"
             ),
             selected = "once"),
+          checkboxInput("task_base_on_completion",
+                       "Calculate next due date from completion date (not original due date)",
+                       value = TRUE),
           dateInput("task_due_date", "Due Date:", value = Sys.Date()),
           textAreaInput("task_description", "Description:", 
                        placeholder = "Optional task description", 
