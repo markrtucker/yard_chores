@@ -16,7 +16,7 @@ server <- function(input, output, session) {
         df <- read_csv(chores_file)
         # Migration: Add base_on_completion column if it doesn't exist
         if (!"base_on_completion" %in% names(df)) {
-          df$base_on_completion <- FALSE
+          df$base_on_completion <- TRUE
         }
         df
       }, error = function(e) {
