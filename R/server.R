@@ -352,7 +352,7 @@ server <- function(input, output, session) {
       updateSelectInput(session, "task_frequency",
                         selected = ifelse("frequency" %in% names(task_to_edit), task_to_edit$frequency, "once"))
       updateCheckboxInput(session, "task_base_on_completion",
-                         value = ifelse("base_on_completion" %in% names(task_to_edit), task_to_edit$base_on_completion, FALSE))
+                         value = ifelse("base_on_completion" %in% names(task_to_edit), task_to_edit$base_on_completion, TRUE))
       updateTextAreaInput(session, "task_description", value = task_to_edit$description)
       
       # Show/hide buttons
