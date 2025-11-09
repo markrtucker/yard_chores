@@ -333,7 +333,7 @@ server <- function(input, output, session) {
     updateTextAreaInput(session, "task_description", value = "")
     updateDateInput(session, "task_due_date", value = Sys.Date())
     updateSelectInput(session, "task_frequency", selected = "once")
-    updateCheckboxInput(session, "task_base_on_completion", value = FALSE)
+    updateCheckboxInput(session, "task_base_on_completion", value = TRUE)
 
     showNotification("Task added successfully!", type = "message")
   })
